@@ -28,6 +28,7 @@ MQ135 mq135 = MQ135(MQ135_PIN);
 float temperature;
 float humidity;
 float corrected_co2;
+float rzero;
 
 void setup() {
   init_serial();
@@ -44,7 +45,7 @@ void loop() {
   humidity = dht.readHumidity();
   float co2 = mq135.getPPM();
   corrected_co2 = mq135.getCorrectedPPM(temperature, humidity);
-  float rzero = mq135.getRZero();
+  rzero = mq135.getRZero();
 
   // process all data
   logln("Temperature: "+ String(temperature));
@@ -62,9 +63,13 @@ void loop() {
 void upload() {
   Broker b = Broker(broker_url);
   b.addProperty("refresh_rate", String(refresh_rate));
+  // report temp& humidity as debug - they are meant to be used for co2
+  // correction only, not ambient meassurements as they are affected by 
+  // the mq135 sensor's heat
   // report only 1 decimal place - saves space in HA dashboards
-  b.addProperty("temperature", String(temperature, 1));
-  b.addProperty("humidity", String(humidity, 1));
+  b.addProperty("debug_temperature", String(temperature, 1));
+  b.addProperty("debug_humidity", String(humidity, 1));
   b.addProperty("co2", String(corrected_co2, 1));
+  b.addProperty("debug_rzero", String(rzero, 1));
   b.upload();
 }
